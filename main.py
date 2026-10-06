@@ -7,6 +7,9 @@ screen=pygame.display.set_mode((SCREEN_WIDTH,SCREEN_HEIGHT))
 
 #defining game speed
 clock=pygame.time.Clock()
+#defining player action variables
+moving_left=False
+moving_right=False
 
 
 class soldier(pygame.sprite.Sprite):
@@ -14,9 +17,11 @@ class soldier(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.x=x
         self.y=y
+        self.speed=5
         self.scale=scale
         self.vel=5
         self.counter=0
+        self.alive=True
         self.action=0
         self.jump = False
         self.flip = False
@@ -59,36 +64,78 @@ class soldier(pygame.sprite.Sprite):
         flipped_image=pygame.transform.flip(self.image,self.flip,False)
         surface.blit(flipped_image,self.rect)
 
+    def move(self,moving_right,moving_left):
+        #reset movement variables
+        dx=0
+        dy=0
+        #assign movement variables if moving right or left
+        if moving_left:
+            dx=-self.vel
+            self.flip=True
+            self.direction=-1
+        if moving_right:
+            dx = self.vel
+            self.flip = False
+            self.direction = 1
+        #updatimg rect coordinates
+        self.rect.x+=dx
+        self.rect.y+=dy
+
     def update(self, *args, **kwargs):
-        keys=pygame.key.get_pressed()
-        if keys[pygame.K_LEFT]:
-            soja.rect.x-=self.vel
-            soja.flip=True
-        if keys[pygame.K_RIGHT]:
-            soja.rect.x+=self.vel
-            soja.flip=False
+       pass
+
+    def update_action(self,new_action):
+        if new_action !=self.action:
+            new_action=self.action
+
+            #updating animation settings
+            self.frame_index=0
+            self.update_time=pygame.time.get_ticks()
+
+
+
+
 
 #class instances
 soja=soldier(200,200,"player",2,1)
 run=True
 while run:
+    clock.tick(60)
     screen.fill("silver")
+
+    # 1. Handle Input Events
     for event in pygame.event.get():
-        if event.type==pygame.QUIT:
-            run=False
+        if event.type == pygame.QUIT:
+            run = False
 
+        # FIX: Keep keyup checks nested inside the event loop
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_LEFT:
+                moving_left = False
+            if event.key == pygame.K_RIGHT:
+                moving_right = False
 
-    #render game here/ call functions
-    soja.draw(screen)
+    # Continuous keyboard holds checked using get_pressed
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT]:
+        moving_left = True
+    if keys[pygame.K_RIGHT]:
+        moving_right = True
+
+    # 2. Update player actions / animations state based on movement status
+    if soja.alive:
+        if moving_left or moving_right:
+            soja.update_action(1)  # 1 = Run
+        else:
+            soja.update_action(0)  # 0 = Idle
+
+    # 3. Apply physics movements and frame calculations
+    soja.move(moving_right, moving_left)
     soja.update_animation()
-    soja.update()
 
+    # 4. Render graphics updates
+    soja.draw(screen)
 
     pygame.display.flip()
-    clock.tick(60)
-
-
-
-
 
 pygame.quit()
